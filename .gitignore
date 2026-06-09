@@ -1,0 +1,23 @@
+# ── Secrets ─────────────────────────────────
+# Real credentials live in .env (ignored here).
+# .env.example is the committed, secret-free template.
+.env
+.env.*
+!.env.example
+
+# ── Python ──────────────────────────────────
+.venv/
+__pycache__/
+*.pyc
+
+# ── Node / Next.js ──────────────────────────
+node_modules/
+.next/
+out/
+
+# ── Logs ────────────────────────────────────
+*.log
+
+# ── OS / editor cruft ───────────────────────
+.DS_Store
+Thumbs.db
