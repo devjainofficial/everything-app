@@ -1,0 +1,6 @@
+# backend/requirements.txt — Python deps for the FastAPI "waiter".
+# These already exist in the shared .venv (LiteLLM pulled them in), but we declare
+# them explicitly so the backend's needs are self-documenting and reproducible.
+fastapi
+uvicorn[standard]
+openai
