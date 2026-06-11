@@ -11,10 +11,10 @@ model_list:
       model: ollama_chat/llama3.2:3b     # back to local Llama (free, fast iteration during dev)
       api_base: http://localhost:11434   # Ollama server address
 
-  # ── Row 2: the cloud brain (Azure OpenAI) ─────────────────────────────────
-  - model_name: azure-brain              # second NICKNAME; this one routes to the cloud
-    litellm_params:
-      model: os.environ/AZURE_MODEL          # resolves to "azure/<deployment>" (composed at launch from AZURE_DEPLOYMENT_NAME)
-      api_base: os.environ/AZURE_API_BASE    # resource URL — pulled from env, never committed to git
-      api_key: os.environ/AZURE_API_KEY      # the secret — pulled from env, never committed to git
-      api_version: os.environ/AZURE_API_VERSION  # the Azure API version string
+  # ── Row 2: the cloud brain (Azure OpenAI) — uncomment when using Azure ────
+  # - model_name: azure-brain
+  #   litellm_params:
+  #     model: os.environ/AZURE_MODEL
+  #     api_base: os.environ/AZURE_API_BASE
+  #     api_key: os.environ/AZURE_API_KEY
+  #     api_version: os.environ/AZURE_API_VERSION
