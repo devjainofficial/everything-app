@@ -12,11 +12,9 @@ start "Ollama" cmd /c "ollama serve"
 :: Wait for Ollama to be ready
 timeout /t 5 /nobreak >nul
 
-:: 2. LiteLLM Gateway (port 4000)
+:: 2. LiteLLM Gateway (port 4000) - via start-gateway.ps1, which loads .env (Azure vars)
 echo [2/4] Starting Gateway...
-start "LiteLLM Gateway" cmd /c ^
-  "set PYTHONUTF8=1 && set PYTHONIOENCODING=utf-8 && ^
-  .venv\Scripts\litellm.exe --config gateway\config.yaml --port 4000"
+start "LiteLLM Gateway" powershell -ExecutionPolicy Bypass -File "%~dp0gateway\start-gateway.ps1"
 
 :: Wait for gateway
 timeout /t 8 /nobreak >nul

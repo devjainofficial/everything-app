@@ -11,10 +11,22 @@ model_list:
       model: ollama_chat/llama3.2:3b     # back to local Llama (free, fast iteration during dev)
       api_base: http://localhost:11434   # Ollama server address
 
-  # ── Row 2: the cloud brain (Azure OpenAI) — uncomment when using Azure ────
-  # - model_name: azure-brain
-  #   litellm_params:
-  #     model: os.environ/AZURE_MODEL
-  #     api_base: os.environ/AZURE_API_BASE
-  #     api_key: os.environ/AZURE_API_KEY
-  #     api_version: os.environ/AZURE_API_VERSION
+  # ── Row 2: the cloud brain (Azure OpenAI) — used for RAG answer synthesis ─
+  - model_name: azure-brain
+    litellm_params:
+      model: os.environ/AZURE_MODEL
+      api_base: os.environ/AZURE_API_BASE
+      api_key: os.environ/AZURE_API_KEY
+      api_version: os.environ/AZURE_API_VERSION
+
+  # ── Row 3: the embedder (local, free) — turns text into vectors for RAG ────
+  - model_name: embedder                 # NICKNAME the backend uses to embed text
+    litellm_params:
+      model: ollama/nomic-embed-text     # 'ollama/' (NOT ollama_chat) = Ollama's EMBEDDINGS endpoint
+      api_base: http://localhost:11434   # same local Ollama server
+
+# ── Gateway-wide settings ──────────────────────────────────────────────────
+litellm_settings:
+  drop_params: true   # silently drop params a provider doesn't support (e.g. Ollama rejects
+                      # 'encoding_format') instead of erroring — the gateway smoothing over
+                      # provider quirks so callers don't have to special-case each backend.

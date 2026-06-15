@@ -4,3 +4,8 @@
 fastapi
 uvicorn[standard]
 openai
+
+# Module 1 (RAG) deps
+psycopg[binary]
+python-dotenv
+pypdf

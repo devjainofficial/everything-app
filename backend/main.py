@@ -15,6 +15,8 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from openai import OpenAI
 
+from rag.answer import answer as rag_answer  # Module 1 RAG: retrieve -> grounded, cited answer
+
 # --- Where the GATEWAY lives. Note: this is the gateway, never a provider. -------------
 # /v1 is included because the OpenAI SDK appends "/chat/completions" to the base_url.
 GATEWAY_URL = os.environ.get("GATEWAY_URL", "http://localhost:4000/v1")
@@ -100,6 +102,13 @@ def stream_gateway(message: str):
 def chat_stream(req: ChatRequest):
     """Streaming relay: same call as /chat but tokens arrive live via Server-Sent Events."""
     return StreamingResponse(stream_gateway(req.message), media_type="text/event-stream")
+
+
+@app.post("/ask")
+def ask(req: ChatRequest):
+    """Module 1 RAG endpoint: retrieve relevant chunks, answer from them.
+    Returns {"answer": str, "sources": [{n, title, distance}, ...]}."""
+    return rag_answer(req.message)
 
 
 @app.get("/health")
