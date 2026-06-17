@@ -9,3 +9,6 @@ openai
 psycopg[binary]
 python-dotenv
 pypdf
+
+# Module 2 (advanced retrieval) deps
+sentence-transformers   # cross-encoder reranker (pulls in torch)

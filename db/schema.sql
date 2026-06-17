@@ -27,3 +27,12 @@ create table if not exists chunks (
 -- At small scale an exact scan is fine; HNSW keeps it fast as the corpus grows.
 create index if not exists chunks_embedding_hnsw
     on chunks using hnsw (embedding vector_cosine_ops);
+
+-- ── Module 2: full-text (keyword) search support ─────────────────────────────
+-- A generated tsvector column (auto-maintained from `text`) is the "keyword" half
+-- of hybrid search; the GIN index makes term matching fast. Fused with vector search
+-- via RRF, it catches exact tokens (e.g. "RRF", "BM25") that embeddings can miss.
+alter table chunks add column if not exists text_tsv tsvector
+    generated always as (to_tsvector('english', text)) stored;
+
+create index if not exists chunks_text_tsv_gin on chunks using gin (text_tsv);
