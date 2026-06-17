@@ -73,7 +73,7 @@ export default function Home() {
             {sources.map((s) => (
               <li key={s.n} className="text-gray-600">
                 [{s.n}] {s.title}{" "}
-                <span className="text-gray-400">(distance {s.distance})</span>
+                <span className="text-gray-400">(score {s.score})</span>
               </li>
             ))}
           </ul>

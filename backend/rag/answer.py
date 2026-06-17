@@ -1,22 +1,24 @@
-"""answer.py — Module 1 Step 5: retrieve chunks -> grounded prompt -> cited answer.
+"""answer.py — Module 2 Step 5: advanced retrieval (hybrid + rerank) -> grounded, cited answer.
 
-This is the "generation" half of RAG. It calls retrieve() (your by-hand function),
-puts the chunks into the prompt as numbered context, and asks the model to answer
-using ONLY that context and cite the passages it used.
+The retrieval half is now the full Module 2 pipeline: hybrid_search (vector + keyword + RRF)
+then cross-encoder rerank. The generation half (grounded prompt -> azure-brain) is unchanged.
 
-Quick test from the project root:
+Quick test:
     PYTHONPATH=backend python -m rag.answer "what is reciprocal rank fusion?"
 """
 import os
 from openai import OpenAI
 
-from rag.retrieve import retrieve
+from rag.hybrid import hybrid_search
+from rag.rerank import rerank
 
 GATEWAY_URL = os.environ.get("GATEWAY_URL", "http://localhost:4000/v1")
 GATEWAY_API_KEY = os.environ.get("GATEWAY_API_KEY", "sk-local-anything")
-ANSWER_MODEL = "azure-brain"   # gateway nickname; swap to "default-brain" for free/local
+ANSWER_MODEL = "default-brain"  # local: the Azure deployment is currently timing out; flip to "azure-brain" when healthy
 
-_client = OpenAI(base_url=GATEWAY_URL, api_key=GATEWAY_API_KEY)
+# Bound the call so a stalled model fails fast (the try/except returns a readable message)
+# instead of hanging the request. CPU-local generation can be slowish, so allow 60s.
+_client = OpenAI(base_url=GATEWAY_URL, api_key=GATEWAY_API_KEY, timeout=60, max_retries=0)
 
 # The grounding instruction — the heart of honest RAG: stay in the context, admit ignorance, cite.
 SYSTEM_PROMPT = (
@@ -26,9 +28,10 @@ SYSTEM_PROMPT = (
 )
 
 
-def answer(query: str, k: int = 5) -> dict:
-    """Retrieve top-k chunks, ground a prompt on them, and return a cited answer."""
-    hits = retrieve(query, k)                       # <- your Step 4 function
+def answer(query: str, k: int = 5, candidates: int = 20) -> dict:
+    """Advanced retrieval -> grounded prompt -> cited answer."""
+    # Module 2 pipeline: hybrid (vector + keyword + RRF) -> cross-encoder rerank -> top-k.
+    hits = rerank(query, hybrid_search(query, candidates=candidates), top_k=k)
     if not hits:
         return {"answer": "No documents have been ingested yet.", "sources": []}
 
@@ -40,7 +43,6 @@ def answer(query: str, k: int = 5) -> dict:
         "Answer using only the context above, and cite passages like [1], [2]."
     )
 
-    # Generation call -> through the gateway -> azure-brain (gpt-4.1).
     try:
         resp = _client.chat.completions.create(
             model=ANSWER_MODEL,
@@ -51,15 +53,13 @@ def answer(query: str, k: int = 5) -> dict:
         )
         answer_text = resp.choices[0].message.content
     except Exception as e:
-        # Surface the error to the UI as a normal response (keeps CORS headers, avoids
-        # the opaque browser "Failed to fetch"). Common cause: answer model not loaded.
+        # Surface errors to the UI as a normal response (keeps CORS headers, avoids "Failed to fetch").
         answer_text = f"Answer generation failed ({type(e).__name__}): {e}"
 
     return {
         "answer": answer_text,
-        # Hand back what we cited, so the UI can show sources.
         "sources": [
-            {"n": i, "title": h["title"], "distance": round(h["distance"], 4)}
+            {"n": i, "title": h["title"], "score": round(h.get("rerank_score", 0.0), 3)}
             for i, h in enumerate(hits, start=1)
         ],
     }
@@ -72,4 +72,4 @@ if __name__ == "__main__":
     print("ANSWER:\n" + result["answer"])
     print("\nSOURCES:")
     for s in result["sources"]:
-        print(f"  [{s['n']}] {s['title']} (dist {s['distance']})")
+        print(f"  [{s['n']}] {s['title']} (score {s['score']})")

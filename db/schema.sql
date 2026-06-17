@@ -36,3 +36,9 @@ alter table chunks add column if not exists text_tsv tsvector
     generated always as (to_tsvector('english', text)) stored;
 
 create index if not exists chunks_text_tsv_gin on chunks using gin (text_tsv);
+
+-- ── Module 2 (contextual retrieval): per-chunk context blurb ─────────────────
+-- Generated at ingest by an LLM to situate the chunk in its document. We embed
+-- (context_text + text) so the vector captures what the chunk is ABOUT. Stored
+-- separately (not glued into `text`) so the original chunk stays clean for citation.
+alter table chunks add column if not exists context_text text;
